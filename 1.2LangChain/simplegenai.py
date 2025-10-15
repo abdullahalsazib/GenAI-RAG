@@ -5,6 +5,8 @@ from langchain_community.vectorstores import FAISS
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
+from langchain_core.documents import Document
+from langchain.chains.retrieval import create_retrieval_chain
 
 # data injetction - from the website scrape the data
 loader = WebBaseLoader("https://docs.langchain.com/langsmith/evaluate-rag-tutorial")
@@ -13,7 +15,7 @@ loader = WebBaseLoader("https://docs.langchain.com/langsmith/evaluate-rag-tutori
 docs = loader.load()
 
 # load llm
-llm = ChatOllama(model="gemma3:1b")
+llm = ChatOllama(base_url="http://localhost:11434",model="gemma3:1b")
 
 # split the texts into documnet
 text_spliter=RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=100)
@@ -42,4 +44,20 @@ answer the following question basd only on the provided context:
 
 document_chain = create_stuff_documents_chain(llm, prompt)
 
-document_chain
+document_chain.invoke({
+    "input": "What is RAG?",
+    "context": [Document(page_content="RAG is Retrieval Augmented Generation")]
+})
+
+# Retriever
+retriever=vectorstoredb.as_retriever()
+retrieval_chain=create_retrieval_chain(retriever, document_chain)
+
+response=retrieval_chain.invoke(
+    {
+        "input": "What is RAG?"
+    }
+)
+
+response["answer"]
+print(response["page_content"])
