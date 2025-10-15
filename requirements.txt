@@ -14,3 +14,4 @@ langchain_chroma
 langsmith
 langchain_ollama
 beautifulsoup4
+streamlit
