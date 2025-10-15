@@ -60,4 +60,4 @@ response=retrieval_chain.invoke(
 )
 
 response["answer"]
-print(response["page_content"])
+print(response)
