@@ -15,3 +15,10 @@ langsmith
 langchain_ollama
 beautifulsoup4
 streamlit
+langchain_groq
+groq
+uvicorn
+sse_starlette
+pydantic==2.9.2 
+fastapi==0.115.0 
+langserve==0.3.0
