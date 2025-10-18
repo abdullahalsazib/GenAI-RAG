@@ -1,10 +1,13 @@
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage, SystemMessage
-from langgraph.graph import StateGraph, START
+from langchain_core.messages import HumanMessage, SystemMessage, AnyMessage
+from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph.message import MessagesState
+from typing_extensions import TypedDict
+from typing import Annotated
+from langgraph.graph.message import add_messages
 
 # Load environment variables
 os.environ["LANGSMITH_PROJECT"] = "AgenticAIworkspace"
@@ -44,34 +47,37 @@ def divide(a: int, b: int) -> float:
     """
     return a / b
 
-
 tools = [add, multiply, divide]
-# Bind the tool to the LLM
 llm_with_tools = llm.bind_tools(tools)
 
 sys_message = SystemMessage(content="You are a helpful assistant tasked with performing arithmetic on a set of inputs.")
 
+# Define State
+class State(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
 
 # Node
-def assistent(state: MessagesState):
+def assistant(state: State):
     return {"messages": [llm_with_tools.invoke([sys_message] + state["messages"])]}
 
-# Builder
-builder = StateGraph(MessagesState)
-
-builder.add_node("assistent", assistent)
+# Build graph
+builder = StateGraph(State)
+builder.add_node("assistant", assistant)
 builder.add_node("tools", ToolNode(tools))
 
-builder.add_edge(START, "assistent")
-builder.add_conditional_edges(
-    "assistent",
-    tools_condition
-)
+builder.add_edge(START, "assistant")
+builder.add_conditional_edges("assistant", tools_condition)
+builder.add_edge("tools", "assistant") # <- back to the brain and make one more decition
+builder.add_edge("assistant", END)  # Terminate graph
 
-builder.add_edge("tools", "assistent")
 graph = builder.compile()
-messages = HumanMessage(content="Add 3 and 4. Multiply the output by 2. Divide the output by 5")
 
-messages = graph.invoke({"messages": messages})
+# Input
+input_messages = [HumanMessage(content="Add 3 and 4. Multiply the output by 2. Divide the output by 5 and what is machin learning (ML) and LLM?")]
 
-print(messages)
+# Invoke graph
+result = graph.invoke({"messages": input_messages})
+
+# Print messages
+for msg in result["messages"]:
+    print(msg)
