@@ -26,3 +26,4 @@ langserve==0.3.0
 langchain_huggingface
 
 langgraph
+langgraph-cli[inmem]

@@ -59,25 +59,19 @@ class State(TypedDict):
 # Node
 def assistant(state: State):
     return {"messages": [llm_with_tools.invoke([sys_message] + state["messages"])]}
+def make_default_graph():
+    # Build graph
+    builder = StateGraph(State)
+    builder.add_node("assistant", assistant)
+    builder.add_node("tools", ToolNode(tools))
 
-# Build graph
-builder = StateGraph(State)
-builder.add_node("assistant", assistant)
-builder.add_node("tools", ToolNode(tools))
+    builder.add_edge(START, "assistant")
+    builder.add_conditional_edges("assistant", tools_condition)
+    builder.add_edge("tools", "assistant") # <- back to the brain and make one more decition
+    builder.add_edge("assistant", END)  # Terminate graph
 
-builder.add_edge(START, "assistant")
-builder.add_conditional_edges("assistant", tools_condition)
-builder.add_edge("tools", "assistant") # <- back to the brain and make one more decition
-builder.add_edge("assistant", END)  # Terminate graph
+    graph = builder.compile()
+    return graph
 
-graph = builder.compile()
 
-# Input
-input_messages = [HumanMessage(content="Add 3 and 4. Multiply the output by 2. Divide the output by 5 and what is machin learning (ML) and LLM?")]
-
-# Invoke graph
-result = graph.invoke({"messages": input_messages})
-
-# Print messages
-for msg in result["messages"]:
-    print(msg)
+graph=make_default_graph()

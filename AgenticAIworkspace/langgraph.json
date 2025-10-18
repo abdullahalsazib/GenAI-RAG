@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "agentic_ai_graph": "app:graph"
+  },
+  "env": "../.env"
+}
